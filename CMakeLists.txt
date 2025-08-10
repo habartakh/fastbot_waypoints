@@ -12,6 +12,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -23,5 +24,15 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/WaypointAction.action"
+)
+
+# rosidl_get_typesupport_target(cpp_typesupport_target
+#   ${PROJECT_NAME} rosidl_typesupport_cpp)
+
+
+# target_link_libraries(approach_service_server_node "${cpp_typesupport_target}")
 
 ament_package()
