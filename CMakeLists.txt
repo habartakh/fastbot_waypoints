@@ -13,6 +13,41 @@ find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(rclcpp_action REQUIRED)
+
+
+# Generate the custom action messages
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/WaypointAction.action"
+  DEPENDENCIES std_msgs geometry_msgs
+)
+
+
+## ADD Executable
+add_executable(fastbot_action_server src/fastbot_action_server.cpp)
+
+ament_target_dependencies(fastbot_action_server
+  rclcpp
+  rclcpp_action
+  std_msgs
+  geometry_msgs
+  nav_msgs
+  tf2
+)
+
+# Add dependency to the custom action message
+rosidl_target_interfaces(fastbot_action_server
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
+install(TARGETS
+  fastbot_action_server
+  DESTINATION lib/${PROJECT_NAME}
+)
+install(DIRECTORY action
+  DESTINATION share/${PROJECT_NAME}/
+)
+
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -25,14 +60,11 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "action/WaypointAction.action"
-)
+
+
 
 # rosidl_get_typesupport_target(cpp_typesupport_target
 #   ${PROJECT_NAME} rosidl_typesupport_cpp)
 
-
-# target_link_libraries(approach_service_server_node "${cpp_typesupport_target}")
 
 ament_package()
