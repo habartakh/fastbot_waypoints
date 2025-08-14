@@ -35,6 +35,9 @@ protected:
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   geometry_msgs::msg::Point current_position_;
   bool odom_received_ = false;
+  double current_yaw = 0.0;
+  double init_yaw = 0.0;
+  bool init_yaw_received = false;
 
   void SetUp() override {
     node_ = rclcpp::Node::make_shared("test_fastbot_action_client");
@@ -46,7 +49,18 @@ protected:
         "/fastbot/odom", 10,
         [this](const nav_msgs::msg::Odometry::SharedPtr msg) {
           current_position_ = msg->pose.pose.position;
+          tf2::Quaternion q(
+              msg->pose.pose.orientation.x, msg->pose.pose.orientation.y,
+              msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
+          tf2::Matrix3x3 m(q);
+          double roll, pitch;
+          m.getRPY(roll, pitch, current_yaw);
           odom_received_ = true;
+
+          if (!init_yaw_received) {
+            init_yaw = current_yaw;
+            init_yaw_received = true;
+          }
         });
 
     // Wait for the action server to be available
@@ -79,13 +93,25 @@ protected:
 
     return is_close;
   }
+
+  bool angle_close(double goal_yaw, double tolerance = 0.3) {
+
+    bool is_close = false;
+    double final_yaw = current_yaw;
+    double yaw_diff = final_yaw - goal_yaw;
+
+    is_close = (std::abs(yaw_diff) <= tolerance);
+
+    return is_close;
+  }
 };
 
-TEST_F(FastbotActionServerTest, RobotReachesGoal) {
+TEST_F(FastbotActionServerTest, RobotReachedGoal) {
   // Define the goal
   Waypoint::Goal goal;
   goal.position.x = 0.5;
   goal.position.y = 0.7;
+  double goal_yaw = -1.57 - 1.46;
 
   // Send the goal
   send_goal(goal);
@@ -103,4 +129,38 @@ TEST_F(FastbotActionServerTest, RobotReachesGoal) {
       << "Expected (" << goal.position.x << ", " << goal.position.y << ") "
       << "but got (" << current_position_.x << ", " << current_position_.y
       << ")";
+
+  EXPECT_TRUE(angle_close(goal_yaw))
+      << "Robot did not reach the goal yaw: " << goal_yaw
+      << " Final yaw is: " << current_yaw << " ";
 }
+
+/*
+TEST_F(FastbotActionServerTest, RobotReachedGoal2) {
+  // Define the goal
+  Waypoint::Goal goal;
+  goal.position.x = 1.0;
+  goal.position.y = 0.7;
+  double goal_yaw = 1.57;
+
+  // Send the goal
+  send_goal(goal);
+
+  // Wait for odometry to settle
+  rclcpp::Rate rate(10);
+  for (int i = 0; i < 50 && !position_close(goal.position.x, goal.position.y);
+       ++i) {
+    rclcpp::spin_some(node_);
+    rate.sleep();
+  }
+
+  EXPECT_TRUE(position_close(goal.position.x, goal.position.y))
+      << "Robot did not reach the goal: "
+      << "Expected (" << goal.position.x << ", " << goal.position.y << ") "
+      << "but got (" << current_position_.x << ", " << current_position_.y
+      << ")";
+
+  EXPECT_TRUE(angle_close(goal_yaw))
+      << "Robot did not reach the goal yaw: " << goal_yaw
+      << " Final yaw is: " << current_yaw << " ";
+}*/
