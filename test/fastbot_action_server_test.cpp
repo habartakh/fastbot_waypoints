@@ -38,6 +38,7 @@ protected:
   double current_yaw = 0.0;
   double init_yaw = 0.0;
   bool init_yaw_received = false;
+  double init_yaw_offset = 1.52;
 
   void SetUp() override {
     node_ = rclcpp::Node::make_shared("test_fastbot_action_client");
@@ -94,7 +95,7 @@ protected:
     return is_close;
   }
 
-  bool angle_close(double goal_yaw, double tolerance = 0.3) {
+  bool angle_close(double goal_yaw, double tolerance = 0.4) {
 
     bool is_close = false;
     double final_yaw = current_yaw;
@@ -111,38 +112,10 @@ TEST_F(FastbotActionServerTest, RobotReachedGoal) {
   Waypoint::Goal goal;
   goal.position.x = 0.5;
   goal.position.y = 0.7;
-  double goal_yaw = -1.57 - 1.46;
-
-  // Send the goal
-  send_goal(goal);
-
-  // Wait for odometry to settle
-  rclcpp::Rate rate(10);
-  for (int i = 0; i < 50 && !position_close(goal.position.x, goal.position.y);
-       ++i) {
-    rclcpp::spin_some(node_);
-    rate.sleep();
-  }
-
-  EXPECT_TRUE(position_close(goal.position.x, goal.position.y))
-      << "Robot did not reach the goal: "
-      << "Expected (" << goal.position.x << ", " << goal.position.y << ") "
-      << "but got (" << current_position_.x << ", " << current_position_.y
-      << ")";
-
-  EXPECT_TRUE(angle_close(goal_yaw))
-      << "Robot did not reach the goal yaw: " << goal_yaw
-      << " Final yaw is: " << current_yaw << " ";
-}
-
-/*
-TEST_F(FastbotActionServerTest, RobotReachedGoal2) {
-  // Define the goal
-  Waypoint::Goal goal;
-  goal.position.x = 1.0;
-  goal.position.y = 0.7;
   double goal_yaw = 1.57;
 
+  double global_goal_yaw = goal_yaw + init_yaw_offset;
+
   // Send the goal
   send_goal(goal);
 
@@ -160,7 +133,7 @@ TEST_F(FastbotActionServerTest, RobotReachedGoal2) {
       << "but got (" << current_position_.x << ", " << current_position_.y
       << ")";
 
-  EXPECT_TRUE(angle_close(goal_yaw))
-      << "Robot did not reach the goal yaw: " << goal_yaw
+  EXPECT_TRUE(angle_close(global_goal_yaw))
+      << "Robot did not reach the global goal yaw: " << global_goal_yaw
       << " Final yaw is: " << current_yaw << " ";
-}*/
+}

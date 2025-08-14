@@ -48,7 +48,7 @@ private:
 
   geometry_msgs::msg::Point position_;
   double yaw_{0.0};
-  double initial_yaw = 1.46; // The robot spawns with an offset
+  double initial_yaw = 1.52; // The robot spawns with an offset
   std::string state_;
 
   double yaw_precision_, dist_precision_;
