@@ -23,7 +23,7 @@ class WaypointActionServer : public rclcpp::Node {
 public:
   explicit WaypointActionServer(
       const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
-      : Node("fastbot_as", options), yaw_precision_(0.05),
+      : Node("fastbot_as", options), yaw_precision_(M_PI / 90.0),
         dist_precision_(0.05), state_("idle") {
     using namespace std::placeholders;
     action_server_ = rclcpp_action::create_server<Waypoint>(
@@ -65,6 +65,8 @@ private:
     (void)uuid;
     RCLCPP_INFO(this->get_logger(), "Received goal point: x=%.2f y=%.2f",
                 goal->position.x, goal->position.y);
+    success = false;
+    // state = State::FIX_YAW;
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
 
@@ -173,6 +175,7 @@ private:
     result->success = success;
     goal_handle->succeed(result);
     RCLCPP_INFO(this->get_logger(), "Reached goal successfully");
+    state = State::FIX_YAW;
   }
 
   void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
